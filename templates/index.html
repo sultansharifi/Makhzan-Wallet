@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مخزن مالی</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Tahoma, Arial, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      direction: rtl;
+    }
+    .container { max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+
+    /* header */
+    .header { background: #fff; border-radius: 12px; padding: 1.2rem 1.5rem;
+      border: 1px solid #e5e5e5; margin-bottom: 1rem;
+      display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 18px; }
+
+    /* cards */
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; margin-bottom: 1rem; }
+    .card { background: #fff; border-radius: 10px; padding: 1rem;
+      border: 1px solid #e5e5e5; }
+    .card .lbl { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .card .val { font-size: 22px; font-weight: 600; }
+    .green { color: #2e7d32; }
+    .red   { color: #c62828; }
+    .blue  { color: #1565c0; }
+
+    /* tank */
+    .tank-wrap { display: grid; grid-template-columns: 160px 1fr;
+      gap: 1.25rem; background: #fff; border-radius: 12px;
+      padding: 1.25rem; border: 1px solid #e5e5e5; margin-bottom: 1rem; }
+    .tank { position: relative; width: 120px; height: 200px;
+      border: 2px solid #ccc; border-radius: 10px; overflow: hidden;
+      margin: 0 auto; background: #f9f9f9; }
+    .tank-fill { position: absolute; bottom: 0; width: 100%;
+      background: #90caf9; transition: height 0.6s ease; }
+    .tank-pct { position: absolute; width: 100%; text-align: center;
+      top: 50%; transform: translateY(-50%);
+      font-size: 18px; font-weight: 600; color: #1565c0; }
+
+    /* form */
+    .form-wrap { background: #fff; border-radius: 12px; padding: 1.25rem;
+      border: 1px solid #e5e5e5; margin-bottom: 1rem; }
+    .form-wrap h2 { font-size: 14px; color: #555; margin-bottom: 12px; }
+    .form-row { display: grid; grid-template-columns: 1fr 140px 120px auto;
+      gap: 8px; align-items: end; }
+    .form-row label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; }
+    .form-row input, .form-row select {
+      width: 100%; padding: 8px 10px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 14px; }
+    .btn { padding: 8px 20px; border: none; border-radius: 8px;
+      font-size: 14px; cursor: pointer; }
+    .btn-sabt { background: #1565c0; color: #fff; }
+
+    /* list */
+    .list-wrap { background: #fff; border-radius: 12px;
+      border: 1px solid #e5e5e5; overflow: hidden; }
+    .list-wrap h2 { font-size: 14px; color: #555; padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f0f0f0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: #fafafa; }
+    th, td { padding: 10px 14px; text-align: right;
+      border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    .badge { font-size: 11px; padding: 2px 10px; border-radius: 20px; }
+    .badge-in  { background: #e8f5e9; color: #2e7d32; }
+    .badge-out { background: #ffebee; color: #c62828; }
+    .btn-del { background: none; border: none; color: #bbb;
+      cursor: pointer; font-size: 16px; }
+    .btn-del:hover { color: #c62828; }
+    .empty { text-align: center; color: #aaa; padding: 2rem; font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>مخزن مالی</h1>
+    <small style="color:#aaa">موجودی لحظه‌ای</small>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="lbl">مجموع درآمد</div>
+      <div class="val green">{{ "{:,.0f}".format(majmua_amad) }}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">مجموع مصرف</div>
+      <div class="val red">{{ "{:,.0f}".format(majmua_masraf) }}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">موجودی مخزن</div>
+      <div class="val blue">{{ "{:,.0f}".format(mojoudi) }}</div>
+    </div>
+  </div>
+
+  <div class="tank-wrap">
+    <div>
+      <div class="tank">
+        <div class="tank-fill" style="height: {{ darsad }}%"></div>
+        <div class="tank-pct">{{ darsad }}٪</div>
+      </div>
+      <p style="text-align:center;font-size:12px;color:#888;margin-top:8px">سطح مخزن</p>
+    </div>
+
+    <div class="form-wrap" style="border:none;padding:0;margin:0">
+      <h2>ثبت تراکنش جدید</h2>
+      <form method="POST" action="/sabt">
+        <div class="form-row">
+          <div>
+            <label>توضیح</label>
+            <input name="tawzih" placeholder="معاش، کرایه، ..." required>
+          </div>
+          <div>
+            <label>مقدار</label>
+            <input name="maqdar" type="number" min="1" placeholder="0" required>
+          </div>
+          <div>
+            <label>نوع</label>
+            <select name="nawu">
+              <option value="amad">درآمد</option>
+              <option value="masraf">مصرف</option>
+            </select>
+          </div>
+          <div>
+            <label style="visibility:hidden">ثبت</label>
+            <button class="btn btn-sabt" type="submit">ثبت</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="list-wrap">
+    <h2>تاریخچه تراکنش‌ها</h2>
+    {% if tarikha %}
+    <table>
+      <thead>
+        <tr>
+          <th>توضیح</th>
+          <th>مقدار</th>
+          <th>نوع</th>
+          <th>تاریخ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in tarikha %}
+        <tr>
+          <td>{{ r.tawzih }}</td>
+          <td {% if r.nawu == 'amad' %}class="green"{% else %}class="red"{% endif %}>
+            {% if r.nawu == 'amad' %}+{% else %}-{% endif %}
+            {{ "{:,.0f}".format(r.maqdar) }}
+          </td>
+          <td>
+            <span class="badge {% if r.nawu == 'amad' %}badge-in{% else %}badge-out{% endif %}">
+              {% if r.nawu == 'amad' %}درآمد{% else %}مصرف{% endif %}
+            </span>
+          </td>
+          <td style="color:#aaa">{{ r.tarikh.strftime('%Y-%m-%d') }}</td>
+          <td>
+            <form method="POST" action="/delete/{{ r.id }}" style="display:inline">
+              <button class="btn-del" title="حذف">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">هنوز تراکنشی ثبت نشده.</p>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>
