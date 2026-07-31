@@ -13,7 +13,14 @@ with app.app_context():
 @app.route('/')
 def index():
     m = Makhzan()
-    tarikha = Tarikhcha.query.order_by(Tarikhcha.tarikh.desc()).all()
+    rows = Tarikhcha.query.all()
+    pipes_in = {}
+    pipes_out = {}
+    for r in rows:
+        if r.nawu == 'amad':
+            pipes_in[r.tawzih] = pipes_in.get(r.tawzih, 0) + r.maqdar
+        else:
+            pipes_out[r.tawzih] = pipes_out.get(r.tawzih, 0) + r.maqdar
     darsad = 0
     if m.majmua_amad > 0:
         darsad = min(int((m.mojoudi / m.majmua_amad) * 100), 100)
@@ -22,7 +29,8 @@ def index():
         majmua_amad=m.majmua_amad,
         majmua_masraf=m.majmua_masraf,
         darsad=darsad,
-        tarikha=tarikha
+        pipes_in=[{'name':k,'amt':v,'period':'monthly'} for k,v in pipes_in.items()],
+        pipes_out=[{'name':k,'amt':v,'period':'monthly'} for k,v in pipes_out.items()]
     )
 
 
@@ -39,10 +47,21 @@ def sabt():
     return redirect(url_for('index'))
 
 
-@app.route('/delete/<int:rid>', methods=['POST'])
-def delete(rid):
-    row = Tarikhcha.query.get_or_404(rid)
-    db.session.delete(row)
+@app.route('/delete_pipe', methods=['POST'])
+def delete_pipe():
+    nawu_type = request.form.get('type')
+    name = request.form.get('name')
+    nawu = 'amad' if nawu_type == 'in' else 'masraf'
+    rows = Tarikhcha.query.filter_by(nawu=nawu, tawzih=name).all()
+    for r in rows:
+        db.session.delete(r)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+
+@app.route('/reset', methods=['POST'])
+def reset_game():
+    Tarikhcha.query.delete()
     db.session.commit()
     return redirect(url_for('index'))
 
