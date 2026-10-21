@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="حساب ماهانه">
+<meta name="theme-color" content="#0E6A58">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>حساب ماهانه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&family=Lalezar&display=swap">
+<style>
+/* Layout: one narrow RTL column — month tabs, a big "money left" figure, then income and expense ledgers; a floating + opens a 3-step sheet */
+:root{
+  --bg:#EEF2EF; --card:#FFFFFF; --ink:#16231E; --muted:#5D6E67; --line:#D5DED9;
+  --accent:#0E6A58; --accent-ink:#FFFFFF; --soft:#DCEBE5;
+  --in:#1D7A45; --out:#B0432E; --draft:#8A6A12; --draft-bg:#FBF3DC;
+  --display:"Lalezar","Vazirmatn",system-ui,sans-serif;
+  --body:"Vazirmatn",Tahoma,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101815; --card:#18231F; --ink:#E6EEEA; --muted:#93A59D; --line:#2A3833;
+  --accent:#3FB79A; --accent-ink:#0B1512; --soft:#1F332C;
+  --in:#5BC88A; --out:#EE8A73; --draft:#E6C15E; --draft-bg:#2C2714; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101815; --card:#18231F; --ink:#E6EEEA; --muted:#93A59D; --line:#2A3833;
+  --accent:#3FB79A; --accent-ink:#0B1512; --soft:#1F332C;
+  --in:#5BC88A; --out:#EE8A73; --draft:#E6C15E; --draft-bg:#2C2714; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 120px}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-family:var(--display);font-size:24px;letter-spacing:0;margin:0}
+.tabs{display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.tabs button{border:0;background:transparent;padding:6px 14px;border-radius:999px;font-weight:500;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:6px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.mnav{display:flex;align-items:center;gap:10px}
+.mnav .nav{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:24px;line-height:1;display:grid;place-items:center}
+.mnav .nav:disabled{opacity:.35;cursor:default}
+.mname{flex:1;text-align:center;font-weight:700;font-size:17px}
+.past{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.past:empty{display:none}
+.past button{flex:none;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:flex-start;font-size:13px;min-height:44px}
+.past button[aria-current="true"]{border-color:var(--accent);background:var(--soft)}
+.past button .v{font-weight:700;font-variant-numeric:tabular-nums}
+.past button .v.neg{color:var(--out)}
+.hero{display:flex;flex-direction:column;gap:6px;padding:4px 2px}
+.hero .label{color:var(--muted);font-weight:500}
+.hero .big{font-family:var(--display);font-size:clamp(40px,12vw,58px);line-height:1.1;font-variant-numeric:tabular-nums}
+.hero .big.neg{color:var(--out)}
+.hero .sub{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted);font-size:14px}
+.hero .sub b{font-weight:700}
+.hero .sub .i{color:var(--in)} .hero .sub .o{color:var(--out)}
+.meter{height:8px;background:var(--soft);border-radius:99px;overflow:hidden;margin-top:6px}
+.meter span{display:block;height:100%;background:var(--out);border-radius:99px;transition:width .3s}
+.proj{background:var(--draft-bg);color:var(--draft);border-radius:10px;padding:8px 12px;font-size:14px}
+section h2{font-size:15px;margin:0 0 8px;display:flex;justify-content:space-between;color:var(--muted);font-weight:700}
+.list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.row{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row-main{display:flex;align-items:center;gap:10px;padding:12px 14px;background:transparent;border:0;width:100%;text-align:right}
+.row-main .t{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:500}
+.chip{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.chip.fixed{background:var(--accent);color:var(--accent-ink)}
+.amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.amt.in{color:var(--in)} .amt.out{color:var(--out)}
+.row.draft{background:var(--draft-bg)}
+.row.draft .t::before{content:"پیش‌نویس · ";color:var(--draft);font-weight:700}
+.actions{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 12px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 12px;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{color:var(--out)}
+.empty{padding:16px 14px;color:var(--muted);font-size:14px}
+.fab{position:fixed;left:calc(20px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));
+  width:62px;height:62px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);
+  font-size:34px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.22);display:grid;place-items:center}
+.scrim{position:fixed;inset:0;background:rgba(10,20,16,.45);z-index:20}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:21;background:var(--card);border-radius:20px 20px 0 0;
+  padding:20px max(18px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  max-height:90%;overflow:auto}
+.sheet-in{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.sheet h3{margin:0;font-family:var(--display);font-size:24px;font-weight:400}
+.steps{color:var(--muted);font-size:13px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:10px;font-weight:700}
+.seg button[aria-pressed="true"].in{background:var(--in);border-color:var(--in);color:#fff}
+.seg button[aria-pressed="true"].out{background:var(--out);border-color:var(--out);color:#fff}
+label.f{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:14px}
+label.f input{font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);width:100%}
+.drafts{display:flex;flex-wrap:wrap;gap:6px}
+.drafts .lbl{width:100%;color:var(--muted);font-size:13px}
+.drafts button{border:1px dashed var(--draft);background:var(--draft-bg);color:var(--draft);border-radius:99px;padding:4px 12px;font-size:13px}
+.choice{display:flex;flex-direction:column;gap:10px}
+.choice button{border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:14px;text-align:right;display:flex;flex-direction:column;gap:2px}
+.choice button b{font-size:17px}
+.choice button span{color:var(--muted);font-size:13px}
+.choice button.was{border-color:var(--accent)}
+.summary{background:var(--bg);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.summary .a{font-family:var(--display);font-size:30px}
+.ask{font-weight:700;font-size:17px}
+.foot{display:flex;gap:8px}
+.foot .btn{flex:1;padding:12px;font-size:16px}
+.err{color:var(--out);font-size:13px;min-height:1em}
+.note{color:var(--muted);font-size:12px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap" dir="rtl" lang="fa">
+  <div class="top">
+    <h1 class="brand">حساب ماهانه</h1>
+    <div class="tabs" role="tablist">
+      <button id="tab-cur" role="tab" data-act="tab" data-v="cur" aria-selected="true">این ماه</button>
+      <button id="tab-next" role="tab" data-act="tab" data-v="next" aria-selected="false">ماه بعد</button>
+    </div>
+  </div>
+  <div class="mnav">
+    <button class="nav" id="m-prev" data-act="step" data-v="-1" aria-label="ماه قبل">›</button>
+    <div class="mname" id="mname"></div>
+    <button class="nav" id="m-next" data-act="step" data-v="1" aria-label="ماه بعد">‹</button>
+  </div>
+  <div id="past" class="past"></div>
+  <div id="hero" class="hero"></div>
+  <section><h2><span>عاید</span><span id="sum-in"></span></h2><div id="list-in" class="list"></div></section>
+  <section><h2><span>مصارف</span><span id="sum-out"></span></h2><div id="list-out" class="list"></div></section>
+  <p class="note" id="where"></p>
+</div>
+<button class="fab" id="fab" data-act="open" aria-label="افزودن عاید یا مصرف">+</button>
+<div id="sheet-root"></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf=new Intl.NumberFormat('fa-AF',{maximumFractionDigits:2});
+const money=n=>nf.format(Math.abs(n))+' دالر';
+const mk=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const now=new Date();
+const CUR=mk(now), NEXT=mk(new Date(now.getFullYear(),now.getMonth()+1,1));
+let mfmt; try{mfmt=new Intl.DateTimeFormat('fa-AF',{month:'long',year:'numeric',calendar:'gregory'})}catch(e){mfmt=new Intl.DateTimeFormat('fa',{month:'long',year:'numeric'})}
+const addM=(k,n)=>{const[y,m]=k.split('-').map(Number);return mk(new Date(y,m-1+n,1))};
+const mlabel=k=>{const[y,m]=k.split('-').map(Number);return mfmt.format(new Date(y,m-1,15))};
+const toNum=s=>{s=String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٬,\s]/g,'').replace('٫','.');return parseFloat(s)};
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+const S={month:CUR,entries:[],rec:[],open:null,sheet:null,mode:'loading'};
+let base=null;
+
+/* ---------- storage: private cloud store, else this browser ---------- */
+const LS='hesab-v1';
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS)||'{}');S.entries=d.entries||[];S.rec=d.rec||[]}catch(e){}}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify({entries:S.entries,rec:S.rec}))}catch(e){}}
+async function put(col,obj){
+  if(base){await base.collection(col).doc(obj.id).set(obj);return}
+  const arr=col==='entries'?S.entries:S.rec;const i=arr.findIndex(x=>x.id===obj.id);
+  if(i>=0)arr[i]=obj;else arr.push(obj);saveLocal();render();
+}
+async function del(col,id){
+  if(base){await base.collection(col).doc(id).delete();return}
+  if(col==='entries')S.entries=S.entries.filter(x=>x.id!==id);else S.rec=S.rec.filter(x=>x.id!==id);saveLocal();render();
+}
+async function init(){
+  let db=null,uid=null;
+  if(window.claude&&window.claude.use){
+    try{db=await window.claude.use('db');const u=await window.claude.use('user');uid=u?await u.id():null}catch(e){db=null}
+  }
+  if(db&&uid){
+    base=db.doc('data/users/'+uid+'/profile');S.mode='cloud';
+    const sub=(col,key)=>base.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>({...d.data()}));render()},()=>{});
+    sub('entries','entries');sub('recurring','rec');
+  }else{loadLocal();S.mode='local'}
+  render();
+}
+
+/* ---------- derived data ---------- */
+function monthData(m){
+  const ok=S.entries.filter(e=>e.month===m&&e.status==='ok');
+  const handled=new Set(S.entries.filter(e=>e.month===m&&e.recId).map(e=>e.recId));
+  const drafts=S.rec.filter(r=>r.startMonth<m&&(!r.stopFrom||m<r.stopFrom)&&!handled.has(r.id))
+    .map(r=>({id:'d-'+r.id,recId:r.id,kind:r.kind,type:'fixed',title:r.title,amount:r.amount,month:m,status:'draft'}));
+  const sum=(arr,k)=>arr.filter(x=>x.kind===k).reduce((a,x)=>a+x.amount,0);
+  return{ok,drafts,inOk:sum(ok,'in'),outOk:sum(ok,'out'),inAll:sum(ok.concat(drafts),'in'),outAll:sum(ok.concat(drafts),'out')};
+}
+function history(kind){
+  const seen=new Map();
+  [...S.entries].filter(e=>e.status==='ok'&&e.kind===kind).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))
+    .forEach(e=>{const k=e.title.trim();if(!seen.has(k))seen.set(k,e)});
+  return[...seen.values()].slice(0,8);
+}
+
+/* ---------- render ---------- */
+function rowHTML(e){
+  const open=S.open===e.id, isDraft=e.status==='draft';
+  let acts='';
+  if(isDraft)acts=`<div class="actions"><button class="btn primary" data-act="confirmDraft" data-id="${e.recId}">ثبت برای این ماه</button><button class="btn" data-act="skipDraft" data-id="${e.recId}">این ماه نیست</button></div>`;
+  else if(open){
+    acts=`<div class="actions"><button class="btn danger" data-act="del" data-id="${e.id}">حذف از این ماه</button>`;
+    if(e.recId){const r=S.rec.find(x=>x.id===e.recId);if(r&&!r.stopFrom)acts+=`<button class="btn" data-act="stop" data-id="${r.id}" data-m="${e.month}">تکرار نشود از ماه بعد</button>`}
+    acts+=`</div>`;
+  }
+  return `<div class="row${isDraft?' draft':''}"><button class="row-main" data-act="row" data-id="${e.id}" aria-expanded="${open||isDraft}">
+    <span class="t">${esc(e.title)}</span><span class="chip ${e.type==='fixed'?'fixed':''}">${e.type==='fixed'?'ثابت':'متغیر'}</span>
+    <span class="amt ${e.kind}">${money(e.amount)}</span></button>${acts}</div>`;
+}
+function render(){
+  const m=S.month, d=monthData(m);
+  $('#tab-cur').setAttribute('aria-selected',m===CUR);$('#tab-next').setAttribute('aria-selected',m===NEXT);
+  $('#mname').textContent=mlabel(m)+(m<CUR?' · گذشته':'');
+  $('#m-next').disabled=m>=NEXT;
+  const months=[...new Set(S.entries.map(e=>e.month).concat(S.rec.map(r=>r.startMonth)))].filter(x=>x<CUR).sort().reverse();
+  const first=months.length?months[months.length-1]:CUR;
+  $('#m-prev').disabled=m<=first;
+  $('#past').innerHTML=months.length?[CUR,...months].map(k=>{const x=monthData(k),b=x.inOk-x.outOk;return `<button data-act="go" data-v="${k}" aria-current="${k===m}"><span>${k===CUR?'این ماه':esc(mlabel(k))}</span><span class="v${b<0?' neg':''}">${b<0?'−':''}${money(b)}</span></button>`}).join(''):'';
+  const hasDrafts=d.drafts.length>0;
+  const showProj=m>CUR;
+  const bal=showProj?d.inAll-d.outAll:d.inOk-d.outOk;
+  const inV=showProj?d.inAll:d.inOk, outV=showProj?d.outAll:d.outOk;
+  const pct=inV>0?Math.min(100,outV/inV*100):(outV>0?100:0);
+  let h=`<div class="label">${showProj?'پیش‌بینی پول باقی‌مانده در':m<CUR?'پول باقی‌مانده در':'پولی که در این ماه داری'} · ${mlabel(m)}</div>
+    <div class="big${bal<0?' neg':''}">${bal<0?'−':''}${money(bal)}</div>
+    <div class="sub"><span>عاید: <b class="i">${money(inV)}</b></span><span>مصرف: <b class="o">${money(outV)}</b></span>${inV>0?`<span>${nf.format(Math.round(pct))}٪ عاید مصرف شده</span>`:''}</div>
+    <div class="meter" aria-hidden="true"><span style="width:${pct}%"></span></div>`;
+  if(S.mode==='loading')h=`<div class="label">در حال بارگذاری…</div>`;
+  else if(!showProj&&hasDrafts){const p=d.inAll-d.outAll;h+=`<div class="proj">${nf.format(d.drafts.length)} مورد ثابت به صورت پیش‌نویس منتظر تأیید است. اگر همه را ثبت کنی: ${p<0?'−':''}${money(p)}</div>`}
+  $('#hero').innerHTML=h;
+  for(const k of['in','out']){
+    const items=d.drafts.filter(x=>x.kind===k).concat(d.ok.filter(x=>x.kind===k).sort((a,b)=>(a.type===b.type?0:a.type==='fixed'?-1:1)));
+    $('#sum-'+k).textContent=money(k==='in'?(showProj?d.inAll:d.inOk):(showProj?d.outAll:d.outOk));
+    $('#list-'+k).innerHTML=items.length?items.map(rowHTML).join(''):
+      `<div class="empty">${k==='in'?'هنوز عایدی ثبت نشده.':'هنوز مصرفی ثبت نشده.'} با دکمهٔ + اضافه کن.${showProj?' موارد ثابت این ماه، ماه بعد خودکار به صورت پیش‌نویس می‌آیند.':''}</div>`;
+  }
+  $('#where').textContent=S.mode==='cloud'?'معلومات تو خصوصی ذخیره می‌شود و فقط خودت می‌بینی.':S.mode==='local'?'معلومات در همین مرورگر ذخیره می‌شود.':'';
+  renderSheet();
+}
+
+/* ---------- add sheet: 1 details → 2 fixed/variable → 3 permission ---------- */
+function openSheet(pre){S.sheet=Object.assign({step:1,kind:'out',title:'',amount:'',type:null,recId:null,month:S.month,err:''},pre||{});render();setTimeout(()=>{const i=$('#f-title');if(i&&!i.value)i.focus()},50)}
+function renderSheet(){
+  const sh=S.sheet,root=$('#sheet-root');
+  if(!sh){root.innerHTML='';return}
+  if(sh.step===1&&$('#f-title'))readFields();
+  const kw=sh.kind==='in'?'عاید':'مصرف';
+  let body='';
+  if(sh.step===1){
+    const hist=history(sh.kind);
+    body=`<h3>${sh.recId?'ثبت پیش‌نویس':'افزودن'}</h3><div class="steps">قدم ۱ از ۳ · ${mlabel(sh.month)}</div>
+    <div class="seg"><button class="in" data-act="kind" data-v="in" aria-pressed="${sh.kind==='in'}">عاید</button><button class="out" data-act="kind" data-v="out" aria-pressed="${sh.kind==='out'}">مصرف</button></div>
+    ${hist.length&&!sh.recId?`<div class="drafts"><span class="lbl">پیش‌نویس‌ها از دفعه‌های قبل — بزن تا پر شود:</span>${hist.map((e,i)=>`<button data-act="useHist" data-i="${i}">${esc(e.title)} · ${money(e.amount)}</button>`).join('')}</div>`:''}
+    <label class="f">عنوان<input id="f-title" value="${esc(sh.title)}" placeholder="${sh.kind==='in'?'مثلاً: معاش':'مثلاً: کرایهٔ خانه، سودا'}" autocomplete="off"></label>
+    <label class="f">مقدار (دالر)<input id="f-amount" value="${esc(sh.amount)}" inputmode="decimal" placeholder="۰" autocomplete="off"></label>
+    <div class="err">${esc(sh.err)}</div>
+    <div class="foot"><button class="btn" data-act="close">لغو</button><button class="btn primary" data-act="next1">بعدی</button></div>`;
+  }else if(sh.step===2){
+    body=`<h3>این ${kw} ثابت است یا متغیر؟</h3><div class="steps">قدم ۲ از ۳</div>
+    <div class="choice">
+      <button data-act="type" data-v="fixed" class="${sh.type==='fixed'?'was':''}"><b>ثابت</b><span>هر ماه تکرار می‌شود${sh.kind==='in'?' (مثل معاش)':' (مثل کرایه، انترنت)'}. ماه بعد خودکار به صورت پیش‌نویس می‌آید.</span></button>
+      <button data-act="type" data-v="var" class="${sh.type==='var'?'was':''}"><b>متغیر</b><span>فقط همین ماه${sh.kind==='in'?' (مثل کار اضافه)':' (مثل خرید، رستورانت)'}.</span></button>
+    </div>
+    <div class="foot"><button class="btn" data-act="back">برگشت</button></div>`;
+  }else{
+    const a=toNum(sh.amount);
+    body=`<h3>تأیید</h3><div class="steps">قدم ۳ از ۳</div>
+    <div class="summary"><div>${esc(sh.title)} · <span class="chip ${sh.type==='fixed'?'fixed':''}">${sh.type==='fixed'?'ثابت':'متغیر'}</span> · ${kw}</div>
+    <div class="a" style="color:var(--${sh.kind})">${money(a)}</div><div class="steps">${mlabel(sh.month)}${sh.type==='fixed'&&!sh.recId?' · از ماه بعد به صورت پیش‌نویس تکرار می‌شود':''}</div></div>
+    <div class="ask">آیا اجازه است این را ثبت کنم؟</div>
+    <div class="err">${esc(sh.err)}</div>
+    <div class="foot"><button class="btn" data-act="back">نه، برگرد</button><button class="btn primary" data-act="save">بله، ثبت کن</button></div>`;
+  }
+  root.innerHTML=`<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" dir="rtl" lang="fa"><div class="sheet-in">${body}</div></div>`;
+}
+function readFields(){const t=$('#f-title'),a=$('#f-amount');if(t)S.sheet.title=t.value;if(a)S.sheet.amount=a.value}
+
+async function save(){
+  const sh=S.sheet,amount=toNum(sh.amount);
+  const e={id:newId(),kind:sh.kind,type:sh.type,title:sh.title.trim(),amount,month:sh.month,status:'ok',createdAt:Date.now()};
+  try{
+    if(sh.recId){e.recId=sh.recId}
+    else if(sh.type==='fixed'){const r={id:newId(),kind:sh.kind,title:e.title,amount,startMonth:sh.month,createdAt:Date.now()};await put('recurring',r);e.recId=r.id}
+    await put('entries',e);
+    if(sh.recId){const r=S.rec.find(x=>x.id===sh.recId);if(r&&r.amount!==amount)await put('recurring',{...r,amount})}
+    S.sheet=null;render();
+  }catch(err){sh.err=err&&err.code==='quota_exceeded'?'جای ذخیره پر شده؛ چند مورد قدیمی را حذف کن.':'ثبت نشد. دوباره کوشش کن.';render()}
+}
+
+document.addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act,sh=S.sheet;
+  if(sh&&sh.step===1)readFields();
+  switch(act){
+    case 'tab':S.month=b.dataset.v==='cur'?CUR:NEXT;S.open=null;render();break;
+    case 'step':S.month=addM(S.month,+b.dataset.v);S.open=null;render();break;
+    case 'go':S.month=b.dataset.v;S.open=null;render();break;
+    case 'open':openSheet();break;
+    case 'close':S.sheet=null;render();break;
+    case 'kind':sh.kind=b.dataset.v;render();break;
+    case 'useHist':{const h=history(sh.kind)[+b.dataset.i];sh.title=h.title;sh.amount=String(h.amount);sh.type=h.type;render();break}
+    case 'next1':{
+      if(!sh.title.trim()){sh.err='یک عنوان بنویس.';render();break}
+      const a=toNum(sh.amount);if(!(a>0)){sh.err='مقدار را به عدد بنویس.';render();break}
+      sh.err='';sh.step=sh.recId?3:2;render();break}
+    case 'type':sh.type=b.dataset.v;sh.step=3;render();break;
+    case 'back':sh.err='';sh.step=sh.step===3&&!sh.recId?2:1;render();break;
+    case 'save':save();break;
+    case 'row':S.open=S.open===b.dataset.id?null:b.dataset.id;render();break;
+    case 'del':await del('entries',b.dataset.id);S.open=null;render();break;
+    case 'stop':{const r=S.rec.find(x=>x.id===b.dataset.id);const[y,m]=b.dataset.m.split('-').map(Number);await put('recurring',{...r,stopFrom:mk(new Date(y,m,1))});S.open=null;render();break}
+    case 'confirmDraft':{const r=S.rec.find(x=>x.id===b.dataset.id);openSheet({kind:r.kind,title:r.title,amount:String(r.amount),type:'fixed',recId:r.id});break}
+    case 'skipDraft':{const r=S.rec.find(x=>x.id===b.dataset.id);await put('entries',{id:newId(),recId:r.id,kind:r.kind,type:'fixed',title:r.title,amount:r.amount,month:S.month,status:'skipped',createdAt:Date.now()});break}
+  }
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.sheet){S.sheet=null;render()}if(e.key==='Enter'&&S.sheet&&S.sheet.step===1&&e.target.tagName==='INPUT'){e.preventDefault();$('[data-act="next1"]').click()}});
+render();init();
+})();
+</script>
+
+</body>
+</html>
